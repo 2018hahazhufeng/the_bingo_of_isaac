@@ -1,0 +1,3 @@
+<items gfxroot="gfx/items/" version="1">
+    <active id="1" name="Restart Key" gfx="Bingo_restart_item.png" description="战个未来" tags="noeden quest" quality="3" maxcharges="0" chargetype="normal" />
+</items>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+    <name>Bingo</name>
+    <directory>bingo</directory>
+    <id>3555711630</id>
+    <description></description>
+    <version>3.12</version>
+    <visibility>Public</visibility>
+    <tag id="Lua"/>
+    <tag id="Active Items"/>
+    <tag id="Challenges"/>
+</metadata>
