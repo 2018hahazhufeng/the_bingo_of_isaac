@@ -621,7 +621,8 @@ local task22={
     detailedTaskPart=bossesOption({{type=EntityType.ENTITY_ISAAC,variant=0}},1),
     [ModCallbacks.MC_POST_UPDATE]={
         hasKilledBosses
-    }
+    },
+    conflictTasks={28,31,41,52,72}
 }
 
 -- 任务23：击败小蓝人
@@ -630,7 +631,8 @@ local task23={
     detailedTaskPart=bossesOption({{type=EntityType.ENTITY_ISAAC,variant=1}},1),
     [ModCallbacks.MC_POST_UPDATE]={
         hasKilledBosses
-    }
+    },
+    conflictTasks={28,31,41,52,72}
 }
 
 -- 任务24：击败凹凸
@@ -639,7 +641,8 @@ local task24={
     detailedTaskPart=bossesOption({{type=EntityType.ENTITY_HUSH,variant=0}},1),
     [ModCallbacks.MC_POST_UPDATE]={
         hasKilledBosses
-    }
+    },
+    conflictTasks={31,52}
 }
 
 -- 任务28：击败羔羊
@@ -648,7 +651,8 @@ local task28={
     detailedTaskPart=bossesOption({{type=EntityType.ENTITY_THE_LAMB,variant=0}},1),
     [ModCallbacks.MC_POST_UPDATE]={
         hasKilledBosses
-    }
+    },
+    conflictTasks={22,23,31,52,72}
 }
 
 -- 任务31：击败见证者
@@ -657,7 +661,8 @@ local task31={
     detailedTaskPart=bossesOption({{type=EntityType.ENTITY_MOTHER,variant=10}},1),
     [ModCallbacks.MC_POST_UPDATE]={
         hasKilledBosses
-    }
+    },
+    conflictTasks={22,23,24,28,41,47,52,71,72}
 }
 
 -- 任务41：击败撒旦
@@ -666,7 +671,8 @@ local task41={
     detailedTaskPart=bossesOption({{type=EntityType.ENTITY_SATAN,variant=10}},1),
     [ModCallbacks.MC_POST_UPDATE]={
         hasKilledBosses
-    }
+    },
+    conflictTasks={22,23,31,52,72}
 }
 
 -- 任务47：击败超级撒旦
@@ -675,7 +681,8 @@ local task47={
     detailedTaskPart=bossesOption({{type=EntityType.ENTITY_MEGA_SATAN_2,variant=0}},1),
     [ModCallbacks.MC_POST_UPDATE]={
         hasKilledBosses
-    }
+    },
+    conflictTasks={31,52,72}
 }
 
 -- 任务32：完成一次矿层追逐战（神庙逃亡）
@@ -694,7 +701,7 @@ local task52={
     [ModCallbacks.MC_POST_UPDATE]={
         hasKilledBosses
     },
-    conflictTasks={22,23,24,28,31,41,47,}
+    conflictTasks={22,23,24,28,31,41,47,71,72}
 }
 
 -- 任务58：击败大小贪婪头目
@@ -749,7 +756,8 @@ local task71={
     [ModCallbacks.MC_POST_UPDATE]={
         hasKilledBosses,
         task71AssistanceFunc1
-    }
+    },
+    conflictTasks={31,52}
 }
 
 -- 任务72辅助函数
@@ -777,7 +785,8 @@ local task72={
     [ModCallbacks.MC_POST_UPDATE]={
         hasKilledBosses,
         task72AssistanceFunc1
-    }
+    },
+    conflictTasks={22,23,28,31,41,47,52}
 }
 
 -- 任务76：击败腐化妈腿
