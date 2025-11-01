@@ -130,8 +130,8 @@ local taskDescriptionList={
     [34]="在1分钟内击杀第一层的boss",
     [35]="献祭踩单个刺踩到第10下",
     [36]="拥有5个带食物标签的道具（大胃王）",
-    [37]="触发1次传送",
-    [38]="同时有10个跟班",
+    [37]="同时有10个跟班",
+    [38]="触发1次传送",
     [39]="拥有1张倒卡",
     [40]="拥有硫磺火妈刀组合效果",
     [41]="击败撒旦",
@@ -349,9 +349,7 @@ local function task1()
         detailedTaskPart = pickUpCollectibleOption(1, ItemType.ITEM_NULL, itemPoolOfAngel, { RoomType.ROOM_ANGEL }, -1,
             -1),
         [ModCallbacks.MC_POST_UPDATE] = {
-            function(task)
-                isItemInCurrentRoomItemPool(task.detailedTaskPart)
-            end
+            isItemInCurrentRoomItemPool
         }
     }
     return obj
@@ -1325,17 +1323,18 @@ local function isInBlackList(task, entityVariant)
 end
 
 local function entitiesComparison(task)
-                local entities=Isaac.GetRoomEntities()
-            local entitiesCount=0
-            for _, value in ipairs(entities) do
-                if value.Type==task.detailedTaskPart.targetEntities and ((isInWhiteList(task,value.Variant)~=nil
-                and isInWhiteList(task,value.Variant)) 
-                or ((isInBlackList(task,value.Variant))~=nil and not isInBlackList(task,value.Variant))) then
-                    entitiesCount=entitiesCount+1
-                end
-            end
-            task.detailedTaskPart.achieveCount=entitiesCount
-            checkTaskIfAchived(task)
+    local entities = Isaac.GetRoomEntities()
+    local entitiesCount = 0
+    for _, value in ipairs(entities) do
+        if value.Type == task.detailedTaskPart.targetEntities and ((isInWhiteList(task, value.Variant) ~= nil
+                    and isInWhiteList(task, value.Variant))
+                or ((isInBlackList(task, value.Variant)) ~= nil and not isInBlackList(task, value.Variant))) then
+            entitiesCount = entitiesCount + 1
+        end
+    end
+    task.detailedTaskPart.achieveCount = entitiesCount
+    checkTaskIfAchived(task)
+    updateBingoMapConfigAndRemoveCallBack(task)
 end
 
 -- entities 的子类，都为具体的任务
@@ -1396,6 +1395,7 @@ local function isGridEntitiesDestroyed(task)
             checkTaskIfAchived(task)
         end
     end
+    updateBingoMapConfigAndRemoveCallBack(task)
 end
 
 
@@ -1433,6 +1433,7 @@ local function isTargetStateFlagFinished(task)
     if Bingo.game:GetStateFlag(task.detailedTaskPart.targetStateFlag) then
         task.task.isAchieved=true
     end
+    updateBingoMapConfigAndRemoveCallBack(task)
 end
 
 -- gameState 的子类，都为具体的任务
@@ -1585,15 +1586,21 @@ end
 local function hasMachineInTargetState(task)
     local entityList = Isaac.GetRoomEntities()
     for _, value in ipairs(entityList) do
+        local position=nil
+        if value.Type == EntityType.ENTITY_SLOT and isEntityInMachinePool(task, value) then
+            position=value.PositionOffset
+        end
         if ((value.Type == EntityType.ENTITY_SLOT and isEntityInMachinePool(task, value) and
                     getMachineState(value:GetSprite()) == task.detailedTaskPart.targetMachineState) or
                 (value.Type == EntityType.ENTITY_PICKUP and value.Variant == 100 and value.SubType == task.detailedTaskPart.machineCollectible)) and
             task.detailedTaskPart.achieveMap[GetPtrHash(value)] == nil then
+            print(value:IsDead())
             task.detailedTaskPart.achieveCount = task.detailedTaskPart.achieveCount + 1
             task.detailedTaskPart.achieveMap[GetPtrHash(value)] = true
             checkTaskIfAchived(task)
         end
     end
+    updateBingoMapConfigAndRemoveCallBack(task)
 end
 
 -- machine 的子类，都为具体的任务
@@ -1602,7 +1609,7 @@ end
 local function task45()
     local obj={
         task=tasks_new(true,45,taskDescriptionList[45]),
-        detailedTaskPart=machineOption({45},1,1,158),
+        detailedTaskPart=machineOption({3},1,1,158),
         [ModCallbacks.MC_POST_RENDER]={
             hasMachineInTargetState
         }
@@ -1706,6 +1713,7 @@ local function task49()
             countTargetRoomsNumInNewStage
         }
     }
+    countTargetRoomsNumInNewStage(obj)
     return obj
 end
 
@@ -1725,6 +1733,7 @@ local function task57()
             countTargetRoomsNumInNewStage
         }
     }
+    countTargetRoomsNumInNewStage(obj)
     return obj
 end
 
@@ -1744,6 +1753,7 @@ local function task60()
             countTargetRoomsNumInNewStage
         }
     }
+    countTargetRoomsNumInNewStage(obj)
     return obj
 end
 
@@ -1763,6 +1773,7 @@ local function task61()
             countTargetRoomsNumInNewStage
         }
     }
+    countTargetRoomsNumInNewStage(obj)
     return obj
 end
 
@@ -1788,6 +1799,7 @@ local function task62()
             countTargetRoomsNumInNewStage
         }
     }
+    countTargetRoomsNumInNewStage(obj)
     return obj
 end
 
@@ -1807,6 +1819,7 @@ local function task79()
             countTargetRoomsNumInNewStage
         }
     }
+    countTargetRoomsNumInNewStage(obj)
     return obj
 end
 
@@ -1861,7 +1874,7 @@ local function hasSatisfyBeggar(task)
     end
     local entityList = Isaac.GetRoomEntities()
     for _, value in ipairs(entityList) do
-        if value.Type == EntityType.ENTITY_SLOT and isEntityInBeggarPool(value) and
+        if value.Type == EntityType.ENTITY_SLOT and isEntityInBeggarPool(task,value) and
             task.detailedTaskPart.achieveMap[GetPtrHash(value)] == nil then
             task.detailedTaskPart.achieveMap[GetPtrHash(value)] = { EntityPtr(value), true }
         end
@@ -2068,6 +2081,7 @@ local function task66AssistanceFunc1(task)
         task.task.isAchieved = true
     end
     task.detailedTaskPart.isClearBoss = false
+    updateBingoMapConfigAndRemoveCallBack(task)
 end
 
 local function task66()
@@ -2096,6 +2110,7 @@ local function task70Method(task)
     if (Bingo.game:GetLevel():GetStage() == 1 and Bingo.game:GetLevel():GetStageType() <= 3) then
         task.detailedTaskPart.isOnbranchLine = true
     end
+    updateBingoMapConfigAndRemoveCallBack(task)
 end
 
 local function task70()
