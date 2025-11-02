@@ -60,7 +60,7 @@ Bingo.taskMargin=Sprite()
 Bingo.taskSelectionPosition={X=0,Y=0}
 Bingo.taskSelectionEnable=false
 Bingo.achieveSound=SFXManager()
-Bingo.TASKS_COUNT=76
+Bingo.TASKS_COUNT=80
 Bingo.randomTasksQueue={}
 Bingo.finishTasksNum=0
 Bingo.longestLineLength=0
@@ -68,7 +68,8 @@ Bingo.map={}
 Bingo.mapForCallBacks={
     [ModCallbacks.MC_POST_UPDATE]={},
     [ModCallbacks.MC_POST_RENDER]={},
-    [ModCallbacks.MC_POST_NEW_LEVEL]={}
+    [ModCallbacks.MC_POST_NEW_LEVEL]={},
+    [ModCallbacks.MC_ENTITY_TAKE_DMG]={}
 }
 Bingo.seedForShow=""
 ---virtual keyboard and input variables--
@@ -76,6 +77,9 @@ Bingo.keyboard=require("keyboard")
 ---font path---
 local MOD_FOLDER_NAME="bingo_3555711630"
 local CUSTOM_FONT_FILE_PATH="font/eid9/eid9_9px.fnt"
+-- 测试用
+Bingo.enableDebugTask=true
+Bingo.test=nil
 
 ---funtions---
 
@@ -250,10 +254,16 @@ function Bingo:gameStartMenu()
                 if Input.IsActionTriggered(ButtonAction.ACTION_ITEM,Bingo.player.ControllerIndex) and Bingo.startMenuSelectOfSingle==1 then
                     math.randomseed(Random())                    
                     Bingo:createBingoMap()
-                    -- for test
-                    --test=Bingo.tasks.task58:new()
-                    --test.taskIcon:Load("gfx/tasks/task58.anm2",true)
+                    
+                    -- 测试用
+                    if Bingo.enableDebugTask then
+                        local i=82
+                        Bingo.test=Bingo.tasks["task"..i]()
+                        Bingo.test.task.taskIcon:Load("gfx/tasks/task"..i..".anm2",true)
+                        Bingo.tasks.setTaskForCallback(Bingo.test)
+                    end
                     ---------------
+
                     Bingo.gameMode=0
                     Bingo.gameIsPaused=true
                     Bingo.player.ControlsEnabled=false
@@ -408,6 +418,8 @@ function Bingo:resetWhenExit(ShouldSave)
         Bingo.map={}
         collectgarbage("collect")
         print("jimi!");
+        -- 测试任务用
+        test=nil
     end
 end
 
@@ -503,9 +515,18 @@ Bingo.mapForCallBacksFunc = {
     end,
     [ModCallbacks.MC_POST_NEW_LEVEL] = function()
         if Bingo.gameIsStarted then
-            for key, value in pairs(Bingo.mapForCallBacks[ModCallbacks.MC_POST_NEW_LEVEL]) do
+            for _, value in pairs(Bingo.mapForCallBacks[ModCallbacks.MC_POST_NEW_LEVEL]) do
                 for index, valueFunc in ipairs(value[2]) do
                     valueFunc(value[1])
+                end
+            end
+        end
+    end,
+    [ModCallbacks.MC_ENTITY_TAKE_DMG] = function(_,entity,amount,damageFlags,source,countdownFrames)
+        if Bingo.gameIsStarted then
+            for _, value in pairs(Bingo.mapForCallBacks[ModCallbacks.MC_ENTITY_TAKE_DMG]) do
+                for index, valueFunc in ipairs(value[2]) do
+                    valueFunc(value[1],entity,amount,damageFlags,source,countdownFrames)
                 end
             end
         end
@@ -853,6 +874,20 @@ function Bingo:tasksIconRender()
 
 end 
 
+-- 测试任务用
+function Bingo:testTaskRender()
+    if Bingo.gameIsStarted and Bingo.enableDebugTask then
+        Bingo.test.task.taskIcon:SetFrame("task",0)
+        Bingo.test.task.taskIcon:Render(Vector(100,100))
+        if Bingo.test.task.isAchieved then
+            Bingo.finishIcon:SetFrame("Finish1",0)
+            Bingo.finishIcon:Render(Vector(100,100))
+        end
+    end
+end
+
+
+
 -- 当玩家击败结局boss时，生成重开的道具并阻止可能的结局动画播放
 function Bingo:killFinalBosses()
     local entityList=Isaac.GetRoomEntities();
@@ -923,5 +958,6 @@ Bingo:AddCallback(ModCallbacks.MC_USE_CARD,Bingo.isUseBlackRune,Card.RUNE_BLACK)
 Bingo:AddCallback(ModCallbacks.MC_USE_ITEM,Bingo.isUseBlackRune,CollectibleType.COLLECTIBLE_ABYSS)
 Bingo:AddCallback(ModCallbacks.MC_USE_ITEM,Bingo.restartKeyUse,Bingo.restartKey)
 
-
+-- 测试任务用
+Bingo:AddCallback(ModCallbacks.MC_POST_RENDER,Bingo.testTaskRender)
 

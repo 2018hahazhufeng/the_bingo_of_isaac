@@ -169,7 +169,12 @@ local taskDescriptionList={
     [73]="喂饱1个抽奖乞丐",
     [74]="拥有1个带蓄力条的道具",
     [75]="拥有1个符文",
-    [76]="击败腐化妈腿"
+    [76]="击败腐化妈腿",
+    [77]="玩爆1台机器",
+    [78]="玩爆1台夹娃娃机",
+    [79]="进入3个诅咒房",
+    [80]="进入1个夹层房间",
+    [81]="累计受到50滴血伤害（1滴血为半颗心）"
 }
 
 
@@ -1547,26 +1552,25 @@ end
 -- 子类12 machine
 
 -- 构造函数参数说明：
---   map: 该任务是否在图上
---   index: 该任务的索引（如任务1索引则为1）
---   variant: 目标机器的变种
---   machineState: 机器的目标状态（1为机器被卖爆，2为机器被摧毁）
---   targetNum: 目标数量
---   machineCollectible: 机子卖爆给的道具
-local function machineOption(variant,machineState,targetNum,machineCollectible)
+--   Variant: 目标机器的变种
+--   targetMachineState: 机器的目标状态（1为机器被卖爆，2为机器被摧毁）
+--   TARGET_NUM: 目标数量
+local function machineOption(variant,machineState,targetNum)
     local obj={
         variant=variant,
         targetMachineState=machineState,
         TARGET_NUM=targetNum,
-        machineCollectibles=machineCollectible,
         achieveCount=0,
-        achieveMap={}
+        achieveMap={},
+        machinePositionMap={},
+        currentRoom=0
     }
     return obj
 end
 
-local function getMachineState(machineSprite)
-    if (machineSprite:IsFinished("Wiggle") and machineSprite:IsPlaying("Death")) or (machineSprite:IsFinished("Wiggle") and machineSprite:IsPlaying("Broken")) then
+local function getMachineState(machine)
+    local machineSprite=machine:GetSprite()
+    if machineSprite:IsPlaying("Death") then
         return 1
     end
     if machineSprite:IsPlaying("Broken") then
@@ -1584,12 +1588,39 @@ local function isEntityInMachinePool(task, entity)
 end
 
 local function hasMachineInTargetState(task)
+    local roomIndex=Bingo.game:GetLevel():GetCurrentRoomDesc().ListIndex
+    if task.detailedTaskPart.currentRoom~=roomIndex then
+        task.detailedTaskPart.currentRoom=roomIndex
+        task.detailedTaskPart.machinePositionMap={}
+    end
+
     local entityList = Isaac.GetRoomEntities()
     for _, value in ipairs(entityList) do
-        if ((value.Type == EntityType.ENTITY_SLOT and isEntityInMachinePool(task, value) and
-                    getMachineState(value:GetSprite()) == task.detailedTaskPart.targetMachineState)) and
-            task.detailedTaskPart.achieveMap[GetPtrHash(value)] == nil then
-            print(value:GetSprite():IsFinished("Wiggle"))
+        -- 检索房间内有没有目标机器，有就把他的坐标放到machinePositionMap内
+        if value.Type==EntityType.ENTITY_SLOT and isEntityInMachinePool(task,value) and (function ()
+            for _, value_ in ipairs(task.detailedTaskPart.machinePositionMap) do
+                if value.Position:Distance(value_) == 0 then
+                    return false
+                end
+            end
+            return true
+        end)() then
+            table.insert(task.detailedTaskPart.machinePositionMap,value.Position)
+        end
+        -- 对应机器被卖爆出道具的情况: 当机器被卖爆出道具时，检索machinePositionMap内是否有与道具坐标相等的机器坐标，有就相当于原机器被卖爆了
+        if value.Type==EntityType.ENTITY_PICKUP and value.Variant==100 and task.detailedTaskPart.targetMachineState==1 then
+            for index, machinePosition in ipairs(task.detailedTaskPart.machinePositionMap) do
+                if value.Position:Distance(machinePosition)==0 then
+                    task.detailedTaskPart.achieveCount = task.detailedTaskPart.achieveCount + 1
+                    checkTaskIfAchived(task)
+                    task.detailedTaskPart.machinePositionMap[index]=nil
+                end
+            end
+        end
+        -- 对应机器被卖爆没出道具或者是机器被摧毁的情况
+        if (((value.Type == EntityType.ENTITY_SLOT and isEntityInMachinePool(task, value) and
+                    getMachineState(value) == task.detailedTaskPart.targetMachineState)) and
+            task.detailedTaskPart.achieveMap[GetPtrHash(value)] == nil) then
             task.detailedTaskPart.achieveCount = task.detailedTaskPart.achieveCount + 1
             task.detailedTaskPart.achieveMap[GetPtrHash(value)] = true
             checkTaskIfAchived(task)
@@ -1600,11 +1631,35 @@ end
 
 -- machine 的子类，都为具体的任务
 
--- 任务45：玩爆1台预言机
+-- 任务45: 玩爆1台预言机
 local function task45()
     local obj={
         task=tasks_new(true,45,taskDescriptionList[45]),
-        detailedTaskPart=machineOption({3},1,1,{158}),
+        detailedTaskPart=machineOption({3},1,1),
+        [ModCallbacks.MC_POST_RENDER]={
+            hasMachineInTargetState
+        }
+    }
+    return obj
+end
+
+-- 任务77: 玩爆1台机器
+local function task77()
+    local obj={
+        task=tasks_new(true,77,taskDescriptionList[77]),
+        detailedTaskPart=machineOption({1,2,3,10,16,17},1,1),
+        [ModCallbacks.MC_POST_RENDER]={
+            hasMachineInTargetState
+        }
+    }
+    return obj
+end
+
+-- 任务78: 玩爆1台夹娃娃机
+local function task78()
+    local obj={
+        task=tasks_new(true,78,taskDescriptionList[78]),
+        detailedTaskPart=machineOption({16},1,1),
         [ModCallbacks.MC_POST_RENDER]={
             hasMachineInTargetState
         }
@@ -2120,9 +2175,48 @@ local function task70()
     return obj
 end
 
+-- 任务80: 进入1个夹层房间
+local function task80Method(task)
+    local room=Bingo.game:GetLevel():GetCurrentRoomDesc()
+    if room.Data.Type==RoomType.ROOM_DUNGEON and
+    room.Clear==true then
+        task.task.isAchieved=true
+    end
+    updateBingoMapConfigAndRemoveCallBack(task)
+end
 
+local function task80()
+    local obj={
+        task=tasks_new(true,80,taskDescriptionList[80]),
+        detailedTaskPart=otherOption(),
+        [ModCallbacks.MC_POST_UPDATE]={
+            task80Method
+        }
+    }
+    return obj
+end
 
+-- 任务81: 累计受到50滴血伤害(1滴血为半颗心)
+local function task81Method(task,entity,amount,_,_,_)
+    if entity.Type==EntityType.ENTITY_PLAYER then
+        task.detailedTaskPart.achieveCount=task.detailedTaskPart.achieveCount+amount
+    end
+    checkTaskIfAchived(task)
+    updateBingoMapConfigAndRemoveCallBack(task)
+end
 
+local function task81()
+    local obj={
+        task=tasks_new(true,81,taskDescriptionList[81]),
+        detailedTaskPart=otherOption(),
+        [ModCallbacks.MC_ENTITY_TAKE_DMG]={
+            task81Method
+        }
+    }
+    obj.detailedTaskPart.achieveCount=0
+    obj.detailedTaskPart.TARGET_NUM=50
+    return obj
+end
 
 
 function Bingo:isUseVoid()
@@ -2213,7 +2307,13 @@ return {
     task74=task74,
     task75=task75,
     task76=task76,
+    task77=task77,
+    task78=task78,
+    task79=task79,
+    task80=task80,
+    task81=task81,
     conflictCharacter,
     setTaskForCallback=setTaskForCallback,
     achieveSound=achieveSound
 }
+
