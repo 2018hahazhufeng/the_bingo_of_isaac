@@ -69,7 +69,8 @@ Bingo.mapForCallBacks={
     [ModCallbacks.MC_POST_UPDATE]={},
     [ModCallbacks.MC_POST_RENDER]={},
     [ModCallbacks.MC_POST_NEW_LEVEL]={},
-    [ModCallbacks.MC_ENTITY_TAKE_DMG]={}
+    [ModCallbacks.MC_ENTITY_TAKE_DMG]={},
+    [ModCallbacks.MC_USE_CARD]={}
 }
 Bingo.seedForShow=""
 ---virtual keyboard and input variables--
@@ -527,6 +528,15 @@ Bingo.mapForCallBacksFunc = {
             for _, value in pairs(Bingo.mapForCallBacks[ModCallbacks.MC_ENTITY_TAKE_DMG]) do
                 for index, valueFunc in ipairs(value[2]) do
                     valueFunc(value[1],entity,amount,damageFlags,source,countdownFrames)
+                end
+            end
+        end
+    end,
+    [ModCallbacks.MC_USE_CARD] = function()
+        if Bingo.gameIsStarted then
+            for _, value in pairs(Bingo.mapForCallBacks[ModCallbacks.MC_POST_NEW_LEVEL]) do
+                for index, valueFunc in ipairs(value[2]) do
+                    valueFunc(value[1])
                 end
             end
         end

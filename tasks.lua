@@ -176,7 +176,8 @@ local taskDescriptionList={
     [80]="进入1个夹层房间",
     [81]="累计受到50滴血伤害（1滴血为半颗心）",
     [82]="累计使用卡牌、符文和魂石10次",
-    [83]="连续3层探索所有隐藏房和超级隐藏房"
+    [83]="连续3层探索所有隐藏房和超级隐藏房",
+    [84]="拥有卖血袋和血袋"
 }
 
 
@@ -1770,13 +1771,14 @@ local function countTargetRoomsNumInNewStage(task)
     local roomList = Bingo.game:GetLevel():GetRooms()
     local roomNum = 0
     for i = 0, roomList.Size - 1, 1 do
-        if type(task.detailedTaskPart.targetRoom(i)) == "table" then
-            if checkElementInTable(roomList:Get(i).Data.Type, task.detailedTaskPart.targetRoom(i)) and
+        local targetRoom=task.detailedTaskPart.targetRoom(i)
+        if type(targetRoom) == "table" then
+            if checkElementInTable(roomList:Get(i).Data.Type, targetRoom) and
                 roomList:Get(i).GridIndex ~= -100 then
                 roomNum = roomNum + 1
             end
-        elseif type(task.detailedTaskPart.targetRoom(i)) == "number" then
-            if roomList:Get(i).Data.Type == task.detailedTaskPart.targetRoom(i) and roomList:Get(i).GridIndex ~= -100 then
+        elseif type(targetRoom) == "number" then
+            if roomList:Get(i).Data.Type == targetRoom and roomList:Get(i).GridIndex ~= -100 then
                 roomNum = roomNum + 1
             end
         end
