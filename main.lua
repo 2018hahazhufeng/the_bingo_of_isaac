@@ -78,7 +78,7 @@ Bingo.keyboard=require("keyboard")
 local MOD_FOLDER_NAME="bingo_3555711630"
 local CUSTOM_FONT_FILE_PATH="font/eid9/eid9_9px.fnt"
 -- 测试用
-Bingo.enableDebugTask=true
+Bingo.enableDebugTask=false
 Bingo.test=nil
 
 ---funtions---
@@ -257,7 +257,7 @@ function Bingo:gameStartMenu()
                     
                     -- 测试用
                     if Bingo.enableDebugTask then
-                        local i=82
+                        local i=83
                         Bingo.test=Bingo.tasks["task"..i]()
                         Bingo.test.task.taskIcon:Load("gfx/tasks/task"..i..".anm2",true)
                         Bingo.tasks.setTaskForCallback(Bingo.test)

@@ -150,8 +150,8 @@ local taskDescriptionList={
     [54]="喂饱1个除黑乞丐和白乞丐以外的乞丐",
     [55]="移速等于2",
     [56]="第一层不拿除了初始携带的道具以外的任何道具",
-    [57]="击败大小贪婪头目",
-    [58]="打2个Boss挑战房",
+    [57]="打2个Boss挑战房",
+    [58]="击败大小贪婪头目",
     [59]="拥有1个疾病主题的道具",
     [60]="进入5个商店房",
     [61]="进入5个宝箱房",
@@ -174,7 +174,9 @@ local taskDescriptionList={
     [78]="玩爆1台夹娃娃机",
     [79]="进入3个诅咒房",
     [80]="进入1个夹层房间",
-    [81]="累计受到50滴血伤害（1滴血为半颗心）"
+    [81]="累计受到50滴血伤害（1滴血为半颗心）",
+    [82]="累计使用卡牌、符文和魂石10次",
+    [83]="连续3层探索所有隐藏房和超级隐藏房"
 }
 
 
@@ -186,6 +188,19 @@ local function getHashMapLength(map)
     return length
 end
 
+local function checkElementInTable(element,table)
+    for _, value in ipairs(table) do
+        if element==value then
+            return true
+        end
+    end
+    for _, value in pairs(table) do
+        if element==value then
+            return true
+        end
+    end
+    return false
+end
 
 
 local dkjson=require("dkjson")
@@ -640,6 +655,19 @@ local function task74()
     }
     return obj
 end
+
+-- 任务84: 拥有卖血袋和血袋
+local function task84()
+    local obj = {
+        task = tasks_new(true, 84, taskDescriptionList[84]),
+        detailedTaskPart = hasItemsOption({ collectibles = { 119, 135 } }),
+        [ModCallbacks.MC_POST_UPDATE] = {
+            hasItemsWithTag
+        }
+    }
+    return obj
+end
+
 
 ---------------------------------------------
 
@@ -1157,7 +1185,7 @@ local function task12()
         task=tasks_new(true,12,taskDescriptionList[12]),
         detailedTaskPart=pickUpsOption(function ()
             return Bingo.player:GetNumCoins()
-        end),
+        end,99),
         [ModCallbacks.MC_POST_UPDATE]={
             pickUpComprison
         }
@@ -1571,6 +1599,7 @@ end
 local function getMachineState(machine)
     local machineSprite=machine:GetSprite()
     if machineSprite:IsPlaying("Death") then
+        print("jijijiji")
         return 1
     end
     if machineSprite:IsPlaying("Broken") then
@@ -1647,7 +1676,7 @@ end
 local function task77()
     local obj={
         task=tasks_new(true,77,taskDescriptionList[77]),
-        detailedTaskPart=machineOption({1,2,3,10,16,17},1,1),
+        detailedTaskPart=machineOption({1,2,3,16,17},1,1),
         [ModCallbacks.MC_POST_RENDER]={
             hasMachineInTargetState
         }
@@ -1706,9 +1735,18 @@ local function checkSpecialRoomCleard(task)
     if task.detailedTaskPart.maxStage() then
         local roomList = Bingo.game:GetLevel():GetRooms()
         for i = 0, roomList.Size - 1, 1 do
-            if (roomList:Get(i).Data.Type == task.detailedTaskPart.targetRoom(i)) and
-                checkClearType(task,roomList:Get(i)) and task.detailedTaskPart.achieveMap[i] == nil then
-                task.detailedTaskPart.achieveMap[i] = true
+            if type(task.detailedTaskPart.targetRoom(i)) == "table" then
+                if checkElementInTable(roomList:Get(i).Data.Type, task.detailedTaskPart.targetRoom(i)) and
+                    checkClearType(task, roomList:Get(i)) and task.detailedTaskPart.achieveMap[i] == nil then
+                    task.detailedTaskPart.achieveMap[i] = true
+                end
+            else
+                if type(task.detailedTaskPart.targetRoom(i)) == "number" then
+                    if (roomList:Get(i).Data.Type == task.detailedTaskPart.targetRoom(i)) and
+                        checkClearType(task, roomList:Get(i)) and task.detailedTaskPart.achieveMap[i] == nil then
+                        task.detailedTaskPart.achieveMap[i] = true
+                    end
+                end
             end
         end
         if task.detailedTaskPart.isCountByStage and getHashMapLength(task.detailedTaskPart.achieveMap) == task.detailedTaskPart.roomNum and
@@ -1732,8 +1770,15 @@ local function countTargetRoomsNumInNewStage(task)
     local roomList = Bingo.game:GetLevel():GetRooms()
     local roomNum = 0
     for i = 0, roomList.Size - 1, 1 do
-        if roomList:Get(i).Data.Type == task.detailedTaskPart.targetRoom(i) and roomList:Get(i).GridIndex ~= -100 then
-            roomNum = roomNum + 1
+        if type(task.detailedTaskPart.targetRoom(i)) == "table" then
+            if checkElementInTable(roomList:Get(i).Data.Type, task.detailedTaskPart.targetRoom(i)) and
+                roomList:Get(i).GridIndex ~= -100 then
+                roomNum = roomNum + 1
+            end
+        elseif type(task.detailedTaskPart.targetRoom(i)) == "number" then
+            if roomList:Get(i).Data.Type == task.detailedTaskPart.targetRoom(i) and roomList:Get(i).GridIndex ~= -100 then
+                roomNum = roomNum + 1
+            end
         end
     end
     task.detailedTaskPart.roomNum = roomNum
@@ -1872,6 +1917,42 @@ local function task79()
     countTargetRoomsNumInNewStage(obj)
     return obj
 end
+
+-- 任务83辅助函数
+local function task83AssistanceFunc1(task)
+    if task.detailedTaskPart.achieveCount<=task.detailedTaskPart.preAchieveCount then
+        task.detailedTaskPart.achieveCount=0
+        task.detailedTaskPart.preAchieveCount=0
+    else
+        task.detailedTaskPart.preAchieveCount=task.detailedTaskPart.achieveCount
+    end
+end
+
+-- 任务83: 连续3层打开隐藏房和超级隐藏房
+
+local function task83()
+    local obj={
+        task=tasks_new(true,83,taskDescriptionList[83]),
+        detailedTaskPart=specialRoomsAtStageOption(function ()
+            return true
+        end,function ()
+            return {RoomType.ROOM_SECRET,RoomType.ROOM_SUPERSECRET}
+        end,3,1,true),
+        [ModCallbacks.MC_POST_UPDATE]={
+            checkSpecialRoomCleard
+        },
+        [ModCallbacks.MC_POST_NEW_LEVEL]={
+            countTargetRoomsNumInNewStage,
+            task83AssistanceFunc1
+        }
+    }
+    obj.detailedTaskPart.preAchieveCount=0
+    countTargetRoomsNumInNewStage(obj)
+    task83AssistanceFunc1(obj)
+    return obj
+end
+
+
 
 ---------------------------------------------
 
@@ -2218,6 +2299,28 @@ local function task81()
     return obj
 end
 
+-- 任务82: 82累计使用卡牌、符文和魂石10次
+local function task82Method(task)
+    task.detailedTaskPart.achieveCount=task.detailedTaskPart.achieveCount+1
+    checkTaskIfAchived(task)
+    updateBingoMapConfigAndRemoveCallBack(task)
+end
+
+local function task82()
+    local obj={
+        task=tasks_new(true,82,taskDescriptionList[82]),
+        detailedTaskPart=otherOption(),
+        [ModCallbacks.MC_USE_CARD]={
+            task82Method
+        }
+    }
+    obj.detailedTaskPart.achieveCount=0
+    obj.detailedTaskPart.TARGET_NUM=10
+    return obj
+end
+
+
+
 
 function Bingo:isUseVoid()
     isUseVoidOrBlackRune.isUseVoid=true
@@ -2312,6 +2415,9 @@ return {
     task79=task79,
     task80=task80,
     task81=task81,
+    task82=task82,
+    task83=task83,
+    task84=task84,
     conflictCharacter,
     setTaskForCallback=setTaskForCallback,
     achieveSound=achieveSound
