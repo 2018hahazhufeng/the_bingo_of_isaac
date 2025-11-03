@@ -70,7 +70,9 @@ Bingo.mapForCallBacks={
     [ModCallbacks.MC_POST_RENDER]={},
     [ModCallbacks.MC_POST_NEW_LEVEL]={},
     [ModCallbacks.MC_ENTITY_TAKE_DMG]={},
-    [ModCallbacks.MC_USE_CARD]={}
+    [ModCallbacks.MC_USE_CARD]={},
+    [ModCallbacks.MC_PRE_PICKUP_COLLISION]={},
+    [ModCallbacks.MC_USE_PILL]={}
 }
 Bingo.seedForShow=""
 ---virtual keyboard and input variables--
@@ -258,7 +260,7 @@ function Bingo:gameStartMenu()
                     
                     -- 测试用
                     if Bingo.enableDebugTask then
-                        local i=83
+                        local i=98
                         Bingo.test=Bingo.tasks["task"..i]()
                         Bingo.test.task.taskIcon:Load("gfx/tasks/task"..i..".anm2",true)
                         Bingo.tasks.setTaskForCallback(Bingo.test)
@@ -534,7 +536,25 @@ Bingo.mapForCallBacksFunc = {
     end,
     [ModCallbacks.MC_USE_CARD] = function()
         if Bingo.gameIsStarted then
-            for _, value in pairs(Bingo.mapForCallBacks[ModCallbacks.MC_POST_NEW_LEVEL]) do
+            for _, value in pairs(Bingo.mapForCallBacks[ModCallbacks.MC_USE_CARD]) do
+                for index, valueFunc in ipairs(value[2]) do
+                    valueFunc(value[1])
+                end
+            end
+        end
+    end,
+    [ModCallbacks.MC_PRE_PICKUP_COLLISION]=function (_,pickup,collider,low)
+                if Bingo.gameIsStarted then
+            for _, value in pairs(Bingo.mapForCallBacks[ModCallbacks.MC_PRE_PICKUP_COLLISION]) do
+                for index, valueFunc in ipairs(value[2]) do
+                    valueFunc(value[1],pickup,collider,low)
+                end
+            end
+        end
+    end,
+    [ModCallbacks.MC_USE_PILL] = function()
+        if Bingo.gameIsStarted then
+            for _, value in pairs(Bingo.mapForCallBacks[ModCallbacks.MC_USE_PILL]) do
                 for index, valueFunc in ipairs(value[2]) do
                     valueFunc(value[1])
                 end
@@ -564,6 +584,11 @@ function Bingo:showGameInfo()
     Bingo.startMenu:DrawStringUTF8("种子: "..Bingo.seedForShow,10,236,KColor(1,1,1,1))
     if Bingo.gameIsPaused then
         Bingo.startMenu:DrawStringUTF8("游戏已暂停，长按地图键+丢弃卡牌键继续",10,248,KColor(1,0,0,0.8))
+    end
+    if Bingo.ws==nil or Bingo.ws.IsClosed() then
+        Bingo.startMenu:DrawStringUTF8("连接失败",10,260,KColor(255,0,0,1))
+    elseif Bingo.ws~=nil and Bingo.ws.IsOpen() then
+        Bingo.startMenu:DrawStringUTF8("连接成功",10,260,KColor(0,255,0,1))
     end
 end
 --one of the game-over situations:when 3 lives are spent

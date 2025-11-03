@@ -948,6 +948,18 @@ local function task76()
     return obj
 end
 
+-- 任务87: 击败大幽灵
+local function task87()
+    local obj={
+        task=tasks_new(true,87,taskDescriptionList[87]),
+        detailedTaskPart=bossesOption({{type=EntityType.ENTITY_THE_HAUNT,variant=0}},1),
+        [ModCallbacks.MC_POST_UPDATE]={
+            hasKilledBosses
+        }
+    }
+    return obj
+end
+
 ---------------------------------------------
 
 -- 子类4 playerForms
@@ -1044,6 +1056,17 @@ local function task63()
     return obj
 end
 
+local function task86()
+    local obj={
+        task=tasks_new(true,86,taskDescriptionList[86]),
+        detailedTaskPart=playerFormsOption(PlayerForm.PLAYERFORM_BABY),
+        [ModCallbacks.MC_POST_UPDATE]={
+            hasPlayerForm
+        }
+    }
+    return obj
+end
+
 ---------------------------------------------
 
 -- 子类5 attribute
@@ -1133,6 +1156,20 @@ local function task55()
         detailedTaskPart=attributeOption(function ()
             return Bingo.player.MoveSpeed
         end,2.00),
+        [ModCallbacks.MC_POST_UPDATE]={
+            attributeComparison
+        }
+    }
+    return obj
+end
+
+-- 任务90: 射程大于等于15
+local function task90()
+    local obj={
+        task=tasks_new(true,90,taskDescriptionList[90]),
+        detailedTaskPart=attributeOption(function ()
+            return Bingo.player.TearRange
+        end,15.00),
         [ModCallbacks.MC_POST_UPDATE]={
             attributeComparison
         }
@@ -1691,6 +1728,18 @@ local function task78()
         task=tasks_new(true,78,taskDescriptionList[78]),
         detailedTaskPart=machineOption({16},1,1),
         [ModCallbacks.MC_POST_RENDER]={
+            hasMachineInTargetState
+        }
+    }
+    return obj
+end
+
+-- 任务97: 炸1个梳妆台
+local function task97()
+    local obj={
+        task=tasks_new(true,97,taskDescriptionList[97]),
+        detailedTaskPart=machineOption({12},2,1),
+        [ModCallbacks.MC_POST_UPDATE]={
             hasMachineInTargetState
         }
     }
@@ -2321,6 +2370,131 @@ local function task82()
     return obj
 end
 
+-- 任务85: 清空商店所有商品2次
+local function task85Method(task)
+    local roomList=Bingo.game:GetLevel():GetRooms()
+    -- 第一次遍历该层的所有房间，当房间为商店房且visitedCount==1时检查房间内是否有商品，
+    -- 有商品则标记，同时退出遍历该层所有房间的循环（该标记需要在新一层时还原）
+    if not task.detailedTaskPart.shopWithShopItem then
+        for i = 0, roomList.Size - 1, 1 do
+            local room = roomList:Get(i)
+            if room.Data.Type == RoomType.ROOM_SHOP and room.VisitedCount == 1 then
+                local entityList = Isaac.GetRoomEntities()
+                for _, value in ipairs(entityList) do
+                    local pickup=value:ToPickup()
+                    if pickup~=nil and pickup:IsShopItem() then
+                        task.detailedTaskPart.shopWithShopItem = true
+                    end
+                end
+            end
+        end
+    end
+    -- 当确认当层商店有商品时，当玩家在商店时遍历商店内所有entity，直到所有的entity都不是商品时，
+    -- 确认商店商品被清空，achieveCount+1
+    local currentRoom=Bingo.game:GetLevel():GetCurrentRoomDesc()
+    if task.detailedTaskPart.shopWithShopItem and currentRoom.Data.Type==RoomType.ROOM_SHOP and
+    task.detailedTaskPart.signal==0 then
+        local entityList=Isaac.GetRoomEntities()
+        for _, value in ipairs(entityList) do
+            if value.Type==EntityType.ENTITY_PICKUP and
+            value:ToPickup():IsShopItem() then
+                return
+            end
+        end
+        task.detailedTaskPart.achieveCount=task.detailedTaskPart.achieveCount+1
+        task.detailedTaskPart.signal=1
+    end
+    checkTaskIfAchived(task)
+    updateBingoMapConfigAndRemoveCallBack(task)
+end
+
+local function resetMarkInNewStage(task)
+    task.detailedTaskPart.shopWithShopItem=false
+    task.detailedTaskPart.signal=0
+end
+
+local function task85()
+    local obj={
+        task=tasks_new(true,85,taskDescriptionList[85]),
+        detailedTaskPart=otherOption(),
+        [ModCallbacks.MC_POST_UPDATE]={
+            task85Method
+        },
+        [ModCallbacks.MC_POST_NEW_LEVEL]={
+            resetMarkInNewStage
+        }
+    }
+    obj.detailedTaskPart.achieveCount=0
+    obj.detailedTaskPart.TARGET_NUM=2
+    obj.signal=0
+    resetMarkInNewStage(obj)
+    return obj
+end
+
+-- 任务89: 累计使用药丸15次
+local function task89Method(task)
+    print("jb114")
+    task.detailedTaskPart.achieveCount=task.detailedTaskPart.achieveCount+1
+    checkTaskIfAchived(task)
+    updateBingoMapConfigAndRemoveCallBack(task)
+end
+
+local function task89()
+    local obj={
+        task=tasks_new(true,89,taskDescriptionList[89]),
+        detailedTaskPart=otherOption(),
+        [ModCallbacks.MC_USE_PILL]={
+            task89Method
+        }
+    }
+    obj.detailedTaskPart.achieveCount=0
+    obj.detailedTaskPart.TARGET_NUM=15
+    return obj
+end
+
+-- 任务88: 在商店累计买5个道具
+local function task88Method(task,pickup,player,_)
+    if pickup:IsShopItem() and pickup.Type==EntityType.ENTITY_PICKUP and
+    pickup.Variant==100 then
+        task.detailedTaskPart.achieveCount=task.detailedTaskPart.achieveCount+1
+    end
+    checkTaskIfAchived(task)
+    updateBingoMapConfigAndRemoveCallBack(task)
+end
+
+
+local function task88()
+    local obj={
+        task=tasks_new(true,88,taskDescriptionList[88]),
+        detailedTaskPart=otherOption(),
+        [ModCallbacks.MC_PRE_PICKUP_COLLISION]={
+            task88Method
+        }
+    }
+    obj.detailedTaskPart.achieveCount=0
+    obj.detailedTaskPart.TARGET_NUM=5
+    return obj
+end
+
+-- 任务98: 只用非胎儿博士的炸弹或笑脸炸弹斩杀1个Boss
+local function task98Method(task,entity,amount,_,source,_)
+    if entity:IsBoss() and entity.HitPoints<=amount and source.Type==EntityType.ENTITY_BOMB  then
+        task.task.isAchieved=true
+    end
+    updateBingoMapConfigAndRemoveCallBack(task)
+end
+
+local function task98()
+    local obj={
+        task=tasks_new(true,98,taskDescriptionList[98]),
+        detailedTaskPart=otherOption(),
+        [ModCallbacks.MC_ENTITY_TAKE_DMG]={
+            task98Method
+        }
+    }
+    return obj
+end
+
 
 
 
@@ -2420,6 +2594,14 @@ return {
     task82=task82,
     task83=task83,
     task84=task84,
+    task85=task85,
+    task86=task86,
+    task87=task87,
+    task88=task88,
+    task89=task89,
+    task90=task90,
+    task97=task97,
+    task98=task98,
     conflictCharacter,
     setTaskForCallback=setTaskForCallback,
     achieveSound=achieveSound
