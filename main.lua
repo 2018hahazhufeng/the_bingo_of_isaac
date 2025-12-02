@@ -1,6 +1,6 @@
 StartDebug()
 Bingo = RegisterMod("Bingo", 1)
-Bingo.version = "5.0"
+Bingo.version = "5.9"
 Bingo.userId = ""
 Bingo.roomId = ""
 Bingo.playerIndex = 0 --- 默认为0（即单人游玩模式）
@@ -20,7 +20,7 @@ Bingo.readMapTime = 0 --专门为多人对战模式设计的读图时间
 Bingo.readMapTimeIsStarted = false
 Bingo.timerForReadMapNew = 0
 Bingo.timerForReadMapStart = 0
-Bingo.READMAPTIMELIMIT = 300000 --多人对战模式的读图时间限制，默认为300000毫秒
+Bingo.READMAPTIMELIMIT = 180000 --多人对战模式的读图时间限制，默认为180000毫秒
 
 
 Bingo.gameIsPaused = false
@@ -172,6 +172,7 @@ local function CallbackOnMessage(message, isBinary)
             print(err, pos)
         else
             if gameStartTable.type == "start_game" then
+                Bingo.gameIsPaused=true
                 Bingo.readMapTimeIsStarted = true
                 Bingo.timerForReadMapStart = Isaac.GetTime()
                 print("maptime: ", Bingo.readMapTime)
@@ -348,8 +349,10 @@ function Bingo:gameStartMenu()
                 if Input.IsActionTriggered(ButtonAction.ACTION_MAP, Bingo.player.ControllerIndex) then
                     if Bingo.enableCooperatedMode then
                         Bingo.enableCooperatedMode = false
+                        Bingo.LIMITED_TIME=45
                     else
                         Bingo.enableCooperatedMode = true
+                        Bingo.LIMITED_TIME=35
                     end
                 end
                 if Bingo.enableCooperatedMode then
@@ -408,7 +411,6 @@ end
 --initialize when a new game is started
 --#need to finish
 function Bingo:gameInitialize(isContinued)
-    print("1919810")
     Bingo.player = Isaac.GetPlayer(0)
     Bingo.game = Game()
     Bingo.finalBossPtr.type = nil
@@ -421,6 +423,7 @@ function Bingo:gameInitialize(isContinued)
         Bingo.newStart = false
         Bingo.playerIndex = 0
         Bingo.gameMode = 0
+        Bingo.LIMITED_TIME=45
         Bingo.lives = 2
         Bingo.timerNew = 0
         Bingo.timerStart = 0
@@ -486,8 +489,6 @@ function Bingo:resetWhenExit(ShouldSave)
             Bingo.mapForCallBacks[key] = {}
         end
         Bingo.map = {}
-        collectgarbage("collect")
-        print("jimi!");
         -- 测试任务用
         test = nil
     end
@@ -689,11 +690,12 @@ function Bingo:showGameInfo()
     Bingo.startMenu:DrawStringUTF8("已完成任务数: " .. Bingo.finishTasksNum, 10, 212, KColor(1, 1, 1, 1))
     Bingo.startMenu:DrawStringUTF8("最长连线: " .. Bingo.longestLineLength, 10, 224, KColor(1, 1, 1, 1))
     Bingo.startMenu:DrawStringUTF8("种子: " .. Bingo.seedForShow, 10, 236, KColor(1, 1, 1, 1))
+    Bingo.startMenu:DrawStringUTF8("总时间: "..Bingo.LIMITED_TIME,10,272,KColor(1,1,1,1))
     if Bingo.gameIsPaused then
         Bingo.startMenu:DrawStringUTF8("游戏已暂停，长按地图键+丢弃卡牌键继续", 10, 248, KColor(1, 0, 0, 0.8))
     end
     if Bingo.readMapTimeIsStarted and (not Bingo.gameIsStarted) then
-        Bingo.startMenu:DrawStringUTF8("读图时间: "..Bingo.readMapTimeForShow.minute..":"..Bingo.readMapTimeForShow.second,10,248,KColor(1,0,0,1))
+        Bingo.startMenu:DrawStringUTF8("读图时间: "..Bingo.readMapTimeForShow.minute..":"..Bingo.readMapTimeForShow.second,80,212,KColor(1,0,0,1))
     end
     if Bingo.ws == nil or Bingo.ws.IsClosed() then
         Bingo.startMenu:DrawStringUTF8("连接失败", 10, 260, KColor(255, 0, 0, 1))
@@ -707,6 +709,10 @@ function Bingo:playerDeath(IsGameOver)
     if Bingo.lives > 0 and IsGameOver then
         Bingo.lives = Bingo.lives - 1
         Bingo.continuedTime = Bingo.gameTime;
+        -- 在多人组队模式下死亡有罚时剩余时间的30%
+        if Bingo.enableCooperatedMode then
+            Bingo.LIMITED_TIME=Bingo.LIMITED_TIME-math.floor((Bingo.LIMITED_TIME-Bingo.gameTime/60000)*0.30)
+        end
     end
     if Bingo.lives <= 0 and IsGameOver then
         Bingo.gameIsOver = 2
@@ -829,6 +835,7 @@ function Bingo:createBingoMap()
             --for debug
             local debugtime = 0
             taskIndex = math.random(1, Bingo.TASKS_COUNT)
+            print("map num: ",taskIndex)
             while (not isTaskNoProblem(row, col, taskIndex, mode)) do
                 taskIndex = math.random(1, Bingo.TASKS_COUNT)
                 searchTime = searchTime + 1
@@ -842,9 +849,6 @@ function Bingo:createBingoMap()
                 end
             end
             Bingo.map[row][col] = Bingo.tasks["task" .. taskIndex]()
-            if taskIndex == 67 then
-                print("caonimasbwanyi")
-            end
             if Bingo.map[row][col] == nil then
                 print("nil")
             end
@@ -904,10 +908,11 @@ function Bingo:getMapConfig(taskX, taskY)
                 maxLength = length
             end
         end
-        Bingo.longestLineLength = (maxLength > Bingo.longestLineLength) and maxLength or Bingo.longestLineLength
-        maxLength = 0
-        length = 0
-    elseif taskX + taskY == 4 then
+    end
+    Bingo.longestLineLength = (maxLength > Bingo.longestLineLength) and maxLength or Bingo.longestLineLength
+    maxLength = 0
+    length = 0
+    if taskX + taskY == 4 then
         for i = 1, 5, 1 do
             if Bingo.map[6 - i][i].task.isAchieved and (Bingo.map[6 - i][i].task.achieveBy == Bingo.playerIndex or
                     (Bingo.enableCooperatedMode and CooperatedModeColor[Bingo.map[6 - i][i].task.achieveBy] == CooperatedModeColor[Bingo.playerIndex])) then
@@ -919,10 +924,10 @@ function Bingo:getMapConfig(taskX, taskY)
                 maxLength = length
             end
         end
-        Bingo.longestLineLength = (maxLength > Bingo.longestLineLength) and maxLength or Bingo.longestLineLength
-        maxLength = 0
-        length = 0
     end
+    Bingo.longestLineLength = (maxLength > Bingo.longestLineLength) and maxLength or Bingo.longestLineLength
+    maxLength = 0
+    length = 0
 end
 
 ---------- 渲染相关 ----------
@@ -1082,8 +1087,8 @@ function Bingo:killFinalBosses()
                 Isaac.GetFreeNearPosition(Bingo.player.Position, 3), Vector(0, 0), Bingo.player)
             Isaac.Spawn(5, 340, 0, Vector(0, 0), Vector(0, 0), nil)
         end
-        Isaac.Spawn(5, 100, Bingo.restartKey, Isaac.GetFreeNearPosition(Bingo.player.Position, 3), Vector(0, 0),
-            Bingo.player)
+        local restartKey=Bingo.game:Spawn(EntityType.ENTITY_PICKUP,100,Isaac.GetFreeNearPosition(Bingo.player.Position, 3),Vector(0,0),nil,Bingo.restartKey,100)
+        restartKey:ToPickup():Morph(EntityType.ENTITY_PICKUP,100,Bingo.restartKey,false,true,true)
         Bingo.finalBossPtr.ref.Ref:Remove()
         Bingo.finalBossPtr.type = nil
         Bingo.finalBossPtr.variant = nil
