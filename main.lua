@@ -1014,6 +1014,7 @@ function Bingo:tasksIconRender()
                             end
                         end
                         Bingo.finishIcon:SetFrame("Finish" .. achieveBy, 0)
+                        Bingo.finishIcon.Scale = Vector(1, 1)
                         Bingo.finishIcon:Render(Vector(Bingo.renderPositionOfTasks.X + 10 * valueCol.task.renderXOffset,
                             Bingo.renderPositionOfTasks.Y + 10 * valueCol.task.renderYOffset))
                     end
@@ -1040,20 +1041,22 @@ function Bingo:tasksIconRender()
                             end
                         end
                         Bingo.finishIcon:SetFrame("Finish" .. achieveBy, 0)
-                        Bingo.finishIcon:Render(Vector(Bingo.renderPositionOfTasks.X + 26 * valueCol.task.renderXOffset,
-                            Bingo.renderPositionOfTasks.Y + 26 * valueCol.task.renderYOffset))
+                        Bingo.finishIcon.Scale = Vector(2.2, 2.2)
+                        Bingo.finishIcon:Render(Vector(Bingo.renderPositionOfTasks.X + 26 * valueCol.task.renderXOffset - 7,
+                            Bingo.renderPositionOfTasks.Y + 26 * valueCol.task.renderYOffset - 7))
                     end
                 end
             end
         end
         if Bingo.taskSelectionEnable then
             Bingo.taskSelection:SetFrame("taskselect", 0)
-            Bingo.taskSelection.Scale = Vector(2, 2)
+            Bingo.taskSelection.Scale = Vector(2.3, 2.3)
             Bingo.taskSelection:Render(Vector(Bingo.renderPositionOfTasks.X + Bingo.taskSelectionPosition.X * 26 + 1 - 7,
                 Bingo.renderPositionOfTasks.Y + Bingo.taskSelectionPosition.Y * 26 + 1 - 7))
         else
             if not Bingo.taskSelectionEnable then
                 Bingo.taskSelection:SetFrame("taskselect1", 0)
+                Bingo.taskSelection.Scale = Vector(1, 1)
                 Bingo.taskSelection:Render(Vector(Bingo.renderPositionOfTasks.X + Bingo.taskSelectionPosition.X * 10 + 1,
                     Bingo.renderPositionOfTasks.Y + Bingo.taskSelectionPosition.Y * 10 + 1))
             end
