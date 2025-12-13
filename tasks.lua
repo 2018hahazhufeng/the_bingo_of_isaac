@@ -2625,7 +2625,6 @@ end
 
 local function resetMarkInNewStage(task)
     task.detailedTaskPart.shopStatus = {}
-    task.detailedTaskPart.signal = 0
 end
 
 local function task85()
@@ -2642,7 +2641,6 @@ local function task85()
     obj.detailedTaskPart.achieveCount = 0
     obj.detailedTaskPart.TARGET_NUM = 2
     obj.detailedTaskPart.shopStatus = {}
-    obj.signal = 0
     resetMarkInNewStage(obj)
     return obj
 end
